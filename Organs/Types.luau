@@ -2,10 +2,13 @@ local Signal = require("./Signal")
 
 type Signal<T...> = Signal.Signal<T...>
 
-export type OrganTemplate = {
-    Model: BasePart,
+export type Limb = string
 
-    Adornee: string, -- $ How do I type this as limb names brah
+export type OrganTemplate = {
+    Model: BasePart | Limb, -- Can be a part already in the character based on name
+
+    Adornee: Limb, -- $ How do I type this as limb names brah
+    Offset: CFrame?,
 
     BloodSetting: BloodSetting,
     IntegrityDamageSetting: IntegrityDamageSetting,
@@ -26,18 +29,33 @@ export type BloodSetting = "NoBlood" | "Cosmetic" | "Health"
 export type IntegrityDamageSetting = "None" | "Remaining" | "Full"
 --[[
     Remaining: Damage is applied as Health - (1 - (newIntegrity / oldIntegrity)) * Health
-    Full: Damage is applied as Health - (1 - newIntegrity) * MaxHealth
+    Full: Damage is applied as Health - (oldIntegrity - newIntegrity) * MaxHealth
 ]]
+
+export type QueryResult = {
+    Hit: Organ?,
+
+    Contact: Vector3?, -- First point that gets hit
+    End: Vector3?, -- Point which the query ends (Ran out of power or start + direction)
+
+    Normal: Vector3?, -- Normal of the surface that was hit
+
+    Power: number?,
+}
 
 export type OrganModule = {
     Setup: (char: Model, blood: BloodSetting, ...(OrganTemplate | Organ)?) -> Human, -- Sets up character as human
-    Organ: () -> Organ, -- Creates organ
+    Organ: (model: BasePart, MaxHealth: number, canBleed: boolean?, blood: BloodSetting?, integrity: IntegrityDamageSetting?) -> Organ, -- Creates organ
 
-    SphereCut: (center: Vector3, radius: number, included: {Human}, damage: number | (remaining: number) -> number | nil) -> (),
-    BoxCut: (center: Vector3, size: Vector3, included: {Human}, damage: number | (remaining: number) -> number | nil) -> (),
+    SphereCut: (center: Vector3, radius: number, included: {Human}, damage: number | (remaining: number) -> number | nil) -> {Organ},
+    BoxCut: (cf: CFrame, size: Vector3, included: {Human}, damage: number | (remaining: number) -> number | nil) -> {Organ},
     
-    Pierce: (start: Vector3, direction: Vector3, included: {Human}, radius: number?, power: number?) -> (),
-    Slice: (start: Vector3, path: (t: number) -> (Vector3, Vector3), included: {Human}, radius: number?, power: number?) -> () -- Path takes alpha and returns (position, upvector)
+    Pierce: (start: Vector3, direction: Vector3, included: {Human | Organ}, excluded: {Organ}?, radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> QueryResult,
+    Slice: (start: Vector3, path: (t: number) -> (Vector3, Vector3), included: {Human | Organ}, excluded: {Organ}?, radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> QueryResult, -- Path takes alpha and returns (position, upvector)
+
+    --  Didn't want to do this but it makes more sense
+    PartToOrgan: (instance: BasePart) -> Organ?,
+    ModelToHuman: (model: Model) -> Human?,
 }
 
 export type Human = {
@@ -55,15 +73,9 @@ export type Human = {
 
     Integrity: number, -- Sum(Organ Integrity) / #Organs
 
-        --These functions are solely for cutting the organ models, they are not spatial queries
-    SphereCut: (self: Human, center: Vector3, radius: number, damage: number | (remaining: number) -> number | nil) -> (),
-    BoxCut: (self: Human, center: Vector3, size: Vector3, damage: number | (remaining: number) -> number | nil) -> (),
-    Pierce: (self: Human, start: Vector3, direction: Vector3, radius: number?, power: number?) -> (),
-    Slice: (self: Human, start: Vector3, path: (t: number) -> (Vector3, Vector3), radius: number?, power: number?) -> (),
-
     Reset: (self: Human) -> (), -- Resets all organs to their initial state
 
-    AttachOrgan: (self: Human, organ: Organ, adornee: BasePart) -> (), -- Attaches an organ to the human
+    AttachOrgan: (self: Human, organ: Organ, adornee: BasePart, offset: CFrame?) -> (), -- Attaches an organ to the human
     RemoveOrgan: (self: Human, organ: Organ) -> (), -- Removes an organ
 
     Destroy: (self: Human) -> (), -- Disconnects Human object from the character and cleans up
@@ -82,6 +94,7 @@ export type Human = {
 export type Organ = {
     Model: BasePart,
     Adornee: BasePart?,
+    Weld: Weld?, -- $ Might not actually use weld instances here
 
     Owner: Human?,
 
@@ -93,7 +106,7 @@ export type Organ = {
 
     MaxHealth: number,
     Health: number,
-    Integrity: number, --How much of the organ is still connected (0 = completely severed, 1 = fully connected)
+    Integrity: number, -- How much of the organ is still connected (0 = completely severed, 1 = fully connected)
 
     Snapshots: {Snapshot}, -- Save only the changes brah
 
@@ -101,9 +114,9 @@ export type Organ = {
 
     --These functions are solely for cutting the organ model, they are not spatial queries
     SphereCut: (self: Organ, center: Vector3, radius: number, damage: number | (remaining: number) -> number | nil) -> (),
-    BoxCut: (self: Organ, center: Vector3, size: Vector3, damage: number | (remaining: number) -> number | nil) -> (),
-    Pierce: (self: Organ, start: Vector3, direction: Vector3, radius: number?, power: number?) -> (),
-    Slice: (self: Organ, start: Vector3, path: (t: number) -> (Vector3, Vector3), radius: number?, power: number?) -> (), -- Path takes alpha and returns (position, upvector)
+    BoxCut: (self: Organ, cf: CFrame, size: Vector3, damage: number | (remaining: number) -> number | nil) -> (),
+    Pierce: (self: Organ, start: Vector3, direction: Vector3, radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> (),
+    Slice: (self: Organ, start: Vector3, path: (t: number) -> (Vector3, Vector3), radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> (), -- Path takes alpha and returns (position, upvector)
 
     Heal: (self: Organ, amount: number) -> (), -- Only affects Health
     PartialRepair: (self: Organ, ignoreDamageOnly: boolean, progress: number?) -> (), --ignoreDamageOnly ignores snapshots that do not change integrity if set to true
