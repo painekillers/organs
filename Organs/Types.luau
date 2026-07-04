@@ -2,27 +2,49 @@ local Signal = require("./Signal")
 
 type Signal<T...> = Signal.Signal<T...>
 
-export type Limb = string
+export type Limb = 
+    | "HumanoidRootPart" 
+    | "Head" 
+    | "Torso" 
+    | "Left Arm" 
+    | "Right Arm" 
+    | "Left Leg" 
+    | "Right Leg" 
+    | "UpperTorso"
+    | "LowerTorso"
+    | "LeftUpperArm"
+    | "LeftLowerArm"
+    | "LeftHand"
+    | "RightUpperArm"
+    | "RightLowerArm"
+    | "RightHand"
+    | "LeftUpperLeg"
+    | "LeftLowerLeg"
+    | "LeftFoot"
+    | "RightUpperLeg"
+    | "RightLowerLeg"
+    | "RightFoot"
+    | string
 
 export type OrganTemplate = {
-    Model: BasePart | Limb, -- Can be a part already in the character based on name
+    read Model: BasePart | Limb, -- Can be a part already in the character based on name
 
-    Adornee: Limb, -- $ How do I type this as limb names brah
-    Offset: CFrame?,
+    read Adornee: Limb, -- $ How do I type this as limb names brah
+    read Offset: CFrame?,
 
-    BloodSetting: BloodSetting,
-    IntegrityDamageSetting: IntegrityDamageSetting,
-    CanBleed: boolean,
+    read BloodSetting: BloodSetting,
+    read IntegrityDamageSetting: IntegrityDamageSetting,
+    read CanBleed: boolean,
 
-    MaxHealth: number,
+    read MaxHealth: number,
 }
 
 export type Snapshot = {
-    Model: BasePart?,
-    Integrity: number?,
+    read Model: BasePart?,
+    read Integrity: number?,
 
-    IsBleeding: boolean?,
-    Health: number?,
+    read IsBleeding: boolean?,
+    read Health: number?,
 }
 
 export type BloodSetting = "NoBlood" | "Cosmetic" | "Health"
@@ -33,29 +55,29 @@ export type IntegrityDamageSetting = "None" | "Remaining" | "Full"
 ]]
 
 export type QueryResult = {
-    Hit: Organ?,
+    read Hit: Organ?,
 
-    Contact: Vector3?, -- First point that gets hit
-    End: Vector3?, -- Point which the query ends (Ran out of power or start + direction)
+    read Contact: Vector3?, -- First point that gets hit
+    read End: Vector3?, -- Point which the query ends (Ran out of power or start + direction)
 
-    Normal: Vector3?, -- Normal of the surface that was hit
+    read Normal: Vector3?, -- Normal of the surface that was hit
 
-    Power: number?,
+    read Power: number?,
 }
 
 export type OrganModule = {
-    Setup: (char: Model, blood: BloodSetting, ...(OrganTemplate | Organ)?) -> Human, -- Sets up character as human
-    Organ: (model: BasePart, MaxHealth: number, canBleed: boolean?, blood: BloodSetting?, integrity: IntegrityDamageSetting?) -> Organ, -- Creates organ
+    read Setup: (char: Model, blood: BloodSetting, ...(OrganTemplate | Organ)?) -> Human, -- Sets up character as human
+    read Organ: (model: BasePart, MaxHealth: number, canBleed: boolean?, blood: BloodSetting?, integrity: IntegrityDamageSetting?) -> Organ, -- Creates organ
 
-    SphereCut: (center: Vector3, radius: number, included: {Human}, damage: number | (remaining: number) -> number | nil) -> {Organ},
-    BoxCut: (cf: CFrame, size: Vector3, included: {Human}, damage: number | (remaining: number) -> number | nil) -> {Organ},
+    read SphereCut: (center: Vector3, radius: number, included: {Human}, damage: number | (remaining: number) -> number | nil) -> {Organ},
+    read BoxCut: (cf: CFrame, size: Vector3, included: {Human}, damage: number | (remaining: number) -> number | nil) -> {Organ},
     
-    Pierce: (start: Vector3, direction: Vector3, included: {Human | Organ}, excluded: {Organ}?, radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> QueryResult,
-    Slice: (start: Vector3, path: (t: number) -> (Vector3, Vector3), included: {Human | Organ}, excluded: {Organ}?, radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> QueryResult, -- Path takes alpha and returns (position, upvector)
+    read Pierce: (start: Vector3, direction: Vector3, included: {Human | Organ}, excluded: {Organ}?, radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> QueryResult,
+    read Slice: (start: Vector3, path: (t: number) -> (Vector3, Vector3), included: {Human | Organ}, excluded: {Organ}?, radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> QueryResult, -- Path takes alpha and returns (position, upvector)
 
     --  Didn't want to do this but it makes more sense
-    PartToOrgan: (instance: BasePart) -> Organ?,
-    ModelToHuman: (model: Model) -> Human?,
+    read PartToOrgan: (instance: BasePart) -> Organ?,
+    read ModelToHuman: (model: Model) -> Human?,
 }
 
 export type Human = {
@@ -73,20 +95,20 @@ export type Human = {
 
     Integrity: number, -- Sum(Organ Integrity) / #Organs
 
-    Reset: (self: Human) -> (), -- Resets all organs to their initial state
+    read Reset: (self: Human) -> (), -- Resets all organs to their initial state
 
-    AttachOrgan: (self: Human, organ: Organ, adornee: BasePart, offset: CFrame?) -> (), -- Attaches an organ to the human
-    RemoveOrgan: (self: Human, organ: Organ) -> (), -- Removes an organ
+    read AttachOrgan: (self: Human, organ: Organ, adornee: BasePart, offset: CFrame?) -> (), -- Attaches an organ to the human
+    read RemoveOrgan: (self: Human, organ: Organ) -> (), -- Removes an organ
 
-    Destroy: (self: Human) -> (), -- Disconnects Human object from the character and cleans up
+    read Destroy: (self: Human) -> (), -- Disconnects Human object from the character and cleans up
 
-    IntegrityChanged: Signal<number>,
-    BleedingChanged: Signal<boolean>,
+    read IntegrityChanged: Signal<number>,
+    read BleedingChanged: Signal<boolean>,
 
-    OrganHealthChanged: Signal<Organ, number>, -- Fires when an organ's health changes
+    read OrganHealthChanged: Signal<Organ, number>, -- Fires when an organ's health changes
 
-    OrganRemoved: Signal<Organ>, -- Fires when an organ is removed from the human
-    OrganAttached: Signal<Organ>, -- Fires when an organ is attached to the human
+    read OrganRemoved: Signal<Organ>, -- Fires when an organ is removed from the human
+    read OrganAttached: Signal<Organ>, -- Fires when an organ is attached to the human
 
     Destroying: Signal<>
 }
@@ -104,23 +126,24 @@ export type Organ = {
 
     IsBleeding: boolean,
 
-    MaxHealth: number,
+    read MaxHealth: number,
+
     Health: number,
     Integrity: number, -- How much of the organ is still connected (0 = completely severed, 1 = fully connected)
 
     Snapshots: {Snapshot}, -- Save only the changes brah
 
-    Damage: (self: Organ, damage: number) -> (),
+    read Damage: (self: Organ, damage: number) -> (),
 
     --These functions are solely for cutting the organ model, they are not spatial queries
-    SphereCut: (self: Organ, center: Vector3, radius: number, damage: number | (remaining: number) -> number | nil) -> (),
-    BoxCut: (self: Organ, cf: CFrame, size: Vector3, damage: number | (remaining: number) -> number | nil) -> (),
-    Pierce: (self: Organ, start: Vector3, direction: Vector3, radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> (),
-    Slice: (self: Organ, start: Vector3, path: (t: number) -> (Vector3, Vector3), radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> (), -- Path takes alpha and returns (position, upvector)
+    read SphereCut: (self: Organ, center: Vector3, radius: number, damage: number | (remaining: number) -> number | nil) -> (),
+    read BoxCut: (self: Organ, cf: CFrame, size: Vector3, damage: number | (remaining: number) -> number | nil) -> (),
+    read Pierce: (self: Organ, start: Vector3, direction: Vector3, radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> (),
+    read Slice: (self: Organ, start: Vector3, path: (t: number) -> (Vector3, Vector3), radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> (), -- Path takes alpha and returns (position, upvector)
 
-    Heal: (self: Organ, amount: number) -> (), -- Only affects Health
-    PartialRepair: (self: Organ, ignoreDamageOnly: boolean, progress: number?) -> (), --ignoreDamageOnly ignores snapshots that do not change integrity if set to true
-    Repair: (self: Organ, progress: number?) -> (), 
+    read Heal: (self: Organ, amount: number) -> (), -- Only affects Health
+    read PartialRepair: (self: Organ, ignoreDamageOnly: boolean, progress: number?) -> (), --ignoreDamageOnly ignores snapshots that do not change integrity if set to true
+    read Repair: (self: Organ, progress: number?) -> (), 
     --[[
         Repairing restores integrity and physical model based on its previous snapshot
         The Repair function uses the initial snapshot while PartialRepair uses the most recent snapshot
@@ -128,16 +151,16 @@ export type Organ = {
         When progress is nil, it is treated as 1 (A reversion)
     ]]
 
-    Destroy: (self: Organ) -> (), -- Fully destroys the Organ object
+    read Destroy: (self: Organ) -> (), -- Fully destroys the Organ object
 
-    IntegrityChanged: Signal<number>,
-    HealthChanged: Signal<number>, 
-    BleedingChanged: Signal<boolean>, 
+    read IntegrityChanged: Signal<number>,
+    read HealthChanged: Signal<number>, 
+    read BleedingChanged: Signal<boolean>, 
 
-    OnRemoval: Signal<Human>, --When removed from human
-    OnAttachment: Signal<Human>, --When attached to human
+    read OnRemoval: Signal<Human>, --When removed from human
+    read OnAttachment: Signal<Human>, --When attached to human
 
-    Destroying: Signal<>
+    read Destroying: Signal<>
 }
 
 return nil
