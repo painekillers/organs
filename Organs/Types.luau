@@ -34,6 +34,7 @@ export type OrganTemplate = {
 
     read BloodSetting: BloodSetting,
     read IntegrityDamageSetting: IntegrityDamageSetting,
+    read AttachmentSetting: AttachmentSetting,
     read CanBleed: boolean,
 
     read MaxHealth: number,
@@ -52,6 +53,11 @@ export type IntegrityDamageSetting = "None" | "Remaining" | "Full"
 --[[
     Remaining: Damage is applied as Health - (1 - (newIntegrity / oldIntegrity)) * Health
     Full: Damage is applied as Health - (oldIntegrity - newIntegrity) * MaxHealth
+]]
+export type AttachmentSetting = "Overlap" | "Weld"
+--[[
+    Overlap: Parts of the organ that overlaps with its adornee remains attached
+    Weld: Parts of the organ that is connected to the weld (weld point is within part) remains attached
 ]]
 
 export type QuerySettings = {
@@ -73,7 +79,7 @@ export type QueryResult = {
 
 export type OrganModule = {
     read Setup: (char: Model, ...OrganTemplate) -> Human, -- Sets up character as human
-    read Organ: (model: BasePart, MaxHealth: number, canBleed: boolean?, blood: BloodSetting?, integrity: IntegrityDamageSetting?) -> Organ, -- Creates organ
+    read Organ: (model: BasePart, MaxHealth: number, canBleed: boolean?, blood: BloodSetting?, integrity: IntegrityDamageSetting?, attach: AttachmentSetting?) -> Organ, -- Creates organ
 
     read SphereCut: (center: Vector3, radius: number, included: {Human}, damage: number | (remaining: number) -> number | nil) -> {Organ},
     read BoxCut: (cf: CFrame, size: Vector3, included: {Human}, damage: number | (remaining: number) -> number | nil) -> {Organ},
@@ -124,6 +130,7 @@ export type Organ = {
 
     BloodSetting: BloodSetting,
     IntegrityDamageSetting: IntegrityDamageSetting,
+    AttachmentSetting: AttachmentSetting,
     CanBleed: boolean,
 
     IsBleeding: boolean,
