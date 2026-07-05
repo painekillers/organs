@@ -54,6 +54,12 @@ export type IntegrityDamageSetting = "None" | "Remaining" | "Full"
     Full: Damage is applied as Health - (oldIntegrity - newIntegrity) * MaxHealth
 ]]
 
+export type QuerySettings = {
+    Radius: number?,
+    Power: number?,
+    Falloff: ((dist: number) -> number)?,
+}
+
 export type QueryResult = {
     read Hit: Organ?,
 
@@ -66,14 +72,14 @@ export type QueryResult = {
 }
 
 export type OrganModule = {
-    read Setup: (char: Model, blood: BloodSetting, ...(OrganTemplate | Organ)?) -> Human, -- Sets up character as human
+    read Setup: (char: Model, ...OrganTemplate) -> Human, -- Sets up character as human
     read Organ: (model: BasePart, MaxHealth: number, canBleed: boolean?, blood: BloodSetting?, integrity: IntegrityDamageSetting?) -> Organ, -- Creates organ
 
     read SphereCut: (center: Vector3, radius: number, included: {Human}, damage: number | (remaining: number) -> number | nil) -> {Organ},
     read BoxCut: (cf: CFrame, size: Vector3, included: {Human}, damage: number | (remaining: number) -> number | nil) -> {Organ},
     
-    read Pierce: (start: Vector3, direction: Vector3, included: {Human | Organ}, excluded: {Organ}?, radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> QueryResult,
-    read Slice: (start: Vector3, path: (t: number) -> (Vector3, Vector3), included: {Human | Organ}, excluded: {Organ}?, radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> QueryResult, -- Path takes alpha and returns (position, upvector)
+    read Pierce: (start: Vector3, direction: Vector3, included: {Human | Organ}, excluded: {Organ}?, settings: QuerySettings?) -> QueryResult,
+    read Slice: (start: Vector3, path: (t: number) -> CFrame, included: {Human | Organ}, excluded: {Organ}?, settings: QuerySettings?, stepSize: number?) -> QueryResult, -- Path takes alpha and returns (position, upvector)
 
     --  Didn't want to do this but it makes more sense
     read PartToOrgan: (instance: BasePart) -> Organ?,
@@ -83,8 +89,6 @@ export type OrganModule = {
 export type Human = {
     Character: Model,
     Organs: {Organ},
-
-    BloodSetting: BloodSetting,
 
     IsBleeding: boolean, -- Is any organs bleeding?
 
@@ -102,10 +106,8 @@ export type Human = {
 
     read Destroy: (self: Human) -> (), -- Disconnects Human object from the character and cleans up
 
-    read IntegrityChanged: Signal<number>,
+    read IntegrityChanged: Signal<number, number>,
     read BleedingChanged: Signal<boolean>,
-
-    read OrganHealthChanged: Signal<Organ, number>, -- Fires when an organ's health changes
 
     read OrganRemoved: Signal<Organ>, -- Fires when an organ is removed from the human
     read OrganAttached: Signal<Organ>, -- Fires when an organ is attached to the human
@@ -138,10 +140,10 @@ export type Organ = {
     --These functions are solely for cutting the organ model, they are not spatial queries
     read SphereCut: (self: Organ, center: Vector3, radius: number, damage: number | (remaining: number) -> number | nil) -> (),
     read BoxCut: (self: Organ, cf: CFrame, size: Vector3, damage: number | (remaining: number) -> number | nil) -> (),
-    read Pierce: (self: Organ, start: Vector3, direction: Vector3, radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> (),
-    read Slice: (self: Organ, start: Vector3, path: (t: number) -> (Vector3, Vector3), radius: number?, power: number?, falloff: ((dist: number) -> number)?) -> (), -- Path takes alpha and returns (position, upvector)
+    read Pierce: (self: Organ, start: Vector3, direction: Vector3, settings: QuerySettings?) -> (),
+    read Slice: (self: Organ, start: Vector3, path: (t: number) -> CFrame, settings: QuerySettings?, stepSize: number?) -> (), -- Path takes alpha and returns (position, upvector)
 
-    read Heal: (self: Organ, amount: number) -> (), -- Only affects Health
+    --Use Damage for healing
     read PartialRepair: (self: Organ, ignoreDamageOnly: boolean, progress: number?) -> (), --ignoreDamageOnly ignores snapshots that do not change integrity if set to true
     read Repair: (self: Organ, progress: number?) -> (), 
     --[[
@@ -153,8 +155,8 @@ export type Organ = {
 
     read Destroy: (self: Organ) -> (), -- Fully destroys the Organ object
 
-    read IntegrityChanged: Signal<number>,
-    read HealthChanged: Signal<number>, 
+    read IntegrityChanged: Signal<number, number>,
+    read HealthChanged: Signal<number, number>, 
     read BleedingChanged: Signal<boolean>, 
 
     read OnRemoval: Signal<Human>, --When removed from human
