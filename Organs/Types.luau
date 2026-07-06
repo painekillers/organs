@@ -27,6 +27,8 @@ export type Limb =
     | string
 
 export type OrganTemplate = {
+    read Name: string,
+
     read Model: BasePart | Limb, -- Can be a part already in the character based on name
 
     read Adornee: Limb, -- $ How do I type this as limb names brah
@@ -94,7 +96,7 @@ export type OrganModule = {
 
 export type Human = {
     Character: Model,
-    Organs: {Organ},
+    Organs: {[string]: Organ | {Organ}}, -- If identical name then is array
 
     IsBleeding: boolean, -- Is any organs bleeding?
 
@@ -122,6 +124,8 @@ export type Human = {
 }
 
 export type Organ = {
+    Name: string,
+
     Model: BasePart,
     Adornee: BasePart?,
     Weld: Weld?, -- $ Might not actually use weld instances here

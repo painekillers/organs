@@ -8,6 +8,18 @@ local Organ = require("@self/Organ")
 local Human = {} :: Types.Human
 Humand.__index = Human
 
+local organListMetatable = {
+    __index = function(self, key)
+        local target = rawget(self, key)
+
+        if typeof(target) == "table" then
+            return target[1], target
+        end
+
+        return target
+    end
+}
+
 local function validateCharacter(char: Model): boolean
     if not char:IsA("Model") then
         return false
@@ -50,7 +62,7 @@ return function(char: Model, ...: Types.OrganTemplate): Types.Human -- Construct
 
     local self = setmetatable({
         Character = char,
-        Organs = {},
+        Organs = setmetatable({}, organListMetatable),
 
         IsBleeding = false,
         Integrity = 1,
