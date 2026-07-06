@@ -81,7 +81,7 @@ export type QueryResult = {
 
 export type OrganModule = {
     read Setup: (char: Model, ...OrganTemplate) -> Human, -- Sets up character as human
-    read Organ: (model: BasePart, MaxHealth: number, canBleed: boolean?, blood: BloodSetting?, integrity: IntegrityDamageSetting?, attach: AttachmentSetting?) -> Organ, -- Creates organ
+    read Organ: (model: BasePart, MaxHealth: number, canBleed: boolean?, blood: BloodSetting?, integrity: IntegrityDamageSetting?, integrityWeight: number?, attach: AttachmentSetting?) -> Organ, -- Creates organ
 
     read SphereCut: (center: Vector3, radius: number, included: {Human}, damage: number | (remaining: number) -> number | nil) -> {Organ},
     read BoxCut: (cf: CFrame, size: Vector3, included: {Human}, damage: number | (remaining: number) -> number | nil) -> {Organ},
@@ -115,7 +115,7 @@ export type Human = {
     read Destroy: (self: Human) -> (), -- Disconnects Human object from the character and cleans up
 
     read IntegrityChanged: Signal<number, number>,
-    read BleedingChanged: Signal<boolean>,
+    read BleedingChanged: Signal<boolean>, -- Current bleeding status
 
     read OrganRemoved: Signal<Organ>, -- Fires when an organ is removed from the human
     read OrganAttached: Signal<Organ>, -- Fires when an organ is attached to the human
@@ -140,6 +140,7 @@ export type Organ = {
     IsBleeding: boolean,
 
     read MaxHealth: number,
+    read IntegrityWeight: number?, --How much it contributes to the Human
 
     Health: number,
     Integrity: number, -- How much of the organ is still connected (0 = completely severed, 1 = fully connected)
@@ -168,12 +169,12 @@ export type Organ = {
 
     read IntegrityChanged: Signal<number, number>,
     read HealthChanged: Signal<number, number>, 
-    read BleedingChanged: Signal<boolean>, 
+    read BleedingChanged: Signal<boolean>, -- Current bleeding status
 
-    read OnRemoval: Signal<Human>, --When removed from human
-    read OnAttachment: Signal<Human>, --When attached to human
+    read OnRemoval: Signal<Human>, -- When removed from human
+    read OnAttachment: Signal<Human>, -- When attached to human
 
-    read Destroying: Signal<>
+    read Destroying: Signal<Human?, Organ> -- Pass its owner and itself so we don't need to make an anonymous function to remove it on destruction
 }
 
 return nil
