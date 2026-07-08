@@ -40,6 +40,8 @@ export type OrganTemplate = {
 export type Snapshot = {
     read Model: BasePart?,
     read Integrity: number?,
+
+    read Connected: {[Organ]: Weld} -- $ Organ and their offset ig?
 }
 
 export type AttachmentSetting = "Overlap" | "Weld"
@@ -48,7 +50,13 @@ export type AttachmentSetting = "Overlap" | "Weld"
     Weld: Parts of the organ that is connected to the weld (weld point is within part) remains attached
 ]]
 
-export type CutSetting = "None" | "Single" | "Overlap"
+export type CutSetting = "None" | "Single" | "Overlap" | "Human"
+--[[
+    None: Only query, don't cut
+    Single: Only cut the first option hit
+    Overlap: Cut everything which overlaps
+    Human: Optimization of Overlap which ignores anything not within the same Human as the first option hit
+]]
 
 export type QuerySettings = {
     Radius: number?,
@@ -68,7 +76,7 @@ export type QueryResult = {
 
     read Power: number?, -- Remaining Power
 
-    read Organs: {Organ}? --Everything that was cut if CutSetting is set to Overlap
+    read Organs: {Organ}? -- Everything that was cut if CutSetting is set to Overlap
 }
 
 export type OrganModule = {
@@ -88,16 +96,16 @@ export type OrganModule = {
 
 export type Human = {
     Character: Model,
-    Organs: {[string]: Organ | {Organ}}, -- If identical name then is array
+    Organs: {[string]: Organ}, -- Identical names get errors now haha
 
-    Integrity: number, -- Sum(Organ Integrity) / #Organs
+    Integrity: number, -- Sum(Organ Integrity) / Sum(Organ IntegrityWeight)
 
     read Reset: (self: Human) -> (), -- Resets all organs to their initial state
 
     read AttachOrgan: (self: Human, organ: Organ, adornee: BasePart, offset: CFrame?) -> (), -- Attaches an organ to the human
-    read RemoveOrgan: (self: Human, organ: Organ | number) -> (), -- Removes an organ
+    read RemoveOrgan: (self: Human, organ: Organ | string) -> (), -- Removes an organ
 
-    read Destroy: (self: Human) -> (), -- Disconnects Human object from the character and cleans up
+    read Destroy: (self: Human) -> {Organ}, -- Disconnects Human object from the character and cleans up
 
     read IntegrityChanged: Signal<number, number>,
 
@@ -124,13 +132,16 @@ export type Organ = {
 
     Snapshots: {Snapshot}, -- Save only the changes brah
 
-    --These functions are solely for cutting the organ model, they are not spatial queries
+    -- These functions are solely for cutting the organ model, they are not spatial queries
     read SphereCut: (self: Organ, center: Vector3, radius: number) -> (),
     read BoxCut: (self: Organ, cf: CFrame, size: Vector3) -> (),
     read Pierce: (self: Organ, start: Vector3, direction: Vector3, settings: QuerySettings?) -> (),
     read Slice: (self: Organ, start: Vector3, path: (t: number) -> CFrame, settings: QuerySettings?, stepSize: number?) -> (), -- Path takes alpha and returns (position, upvector)
 
-    read PartialRepair: (self: Organ, progress: number?) -> (), --ignoreDamageOnly ignores snapshots that do not change integrity if set to true
+    read FullCut: (self: Organ) -> (), -- "Cuts" the organ such that its integrity becomes 0
+    -- Note to self: We gotta clone the entire limb to still let it fall off while maintaining a model for the snapshot
+
+    read PartialRepair: (self: Organ, progress: number?) -> (),
     read Repair: (self: Organ, progress: number?) -> (), 
     --[[
         Repairing restores integrity and physical model based on its previous snapshot
@@ -141,7 +152,7 @@ export type Organ = {
 
     read Destroy: (self: Organ) -> (), -- Fully destroys the Organ object
 
-    read IntegrityChanged: Signal<number, number>,
+    read IntegrityChanged: Signal<number, number>, -- Old, new
 
     read OnRemoval: Signal<Human>, -- When removed from human
     read OnAttachment: Signal<Human>, -- When attached to human
