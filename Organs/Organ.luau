@@ -3,13 +3,6 @@ local Types = require("@self/Types")
 local Organ = {} :: Types.Organ
 Organ.__index = Organ
 
--- Damage --
-function Organ:Damage(damage: number)
-    self.Health = math.clamp(self.Health - damage, 0, self.MaxHealth)
-
-    self.HealthChanged:Fire(self.Health)
-end
-
 -- Cutting Functions --
 function Organ:SphereCute()
     

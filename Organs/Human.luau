@@ -37,7 +37,11 @@ local function validateCharacter(char: Model): boolean
     return true
 end
 
-local function getLimb(char: Model, limb: Types.Limb): BasePart?
+local function getLimb(char: Model, limb: Types.Limb | BasePart): BasePart?
+    if typeof(limb) == "Instance" and limb:IsA("BasePart") then
+        return limb
+    end
+
     local part = char:FindFirstChild(limb)
 
     if part and part:IsA("BasePart") then
@@ -53,18 +57,6 @@ local function calculateIntegrity(curr: number, max: number): number
     end
 
     return curr/max
-end
-
-local function calculateBleeding(curr: boolean, ...: boolean): (boolean, boolean) -- New bleeding value, value changed?
-    if curr == true then
-        return true, false
-    end
-    for i = 1, select("#", ...) do
-        if select(i, ...) then
-            return true, true
-        end
-	end
-	return false, false
 end
 
 -- Reset Function --
@@ -108,15 +100,6 @@ function Human:AttachOrgan(organ: Types.Organ, adornee: BasePart, offset: CFrame
         self.IntegrityChanged:Fire(pastIntegrity, self.Integrity)
     end
 
-    -- Handling bleeding change
-    local newBleed, changed = calculateBleeding(self.IsBleeding, organ.IsBleeding)
-   
-    self.IsBleeding = newBleed
-   
-    if changed then
-       self.BleedingChanged:Fire(newBleed) 
-    end
-
     -- Physically attach the organ part
     local weld = Instance.new("Weld") -- $ Might change this
 
@@ -155,14 +138,12 @@ return function(char: Model, ...: Types.OrganTemplate): Types.Human -- Construct
         Character = char,
         Organs = setmetatable({}, organListMetatable),
 
-        IsBleeding = false,
         Integrity = 1,
 
         _maxIntegrity = 0, -- Hidden caches for faster calculation
         _currIntegrity = 0,
 
         IntegrityChanged = Signal.new<<number, number>>(),
-        BleedingChanged = Signal.new<<boolean>>(),
 
         OrganRemoved = Signal.new<<Types.Organ>>(),
         OrganAttached = Signal.new<<Types.Organ>>(),
